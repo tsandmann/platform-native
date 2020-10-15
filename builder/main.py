@@ -18,7 +18,20 @@
 
 from SCons.Script import AlwaysBuild, Default, DefaultEnvironment
 
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
+
 env = DefaultEnvironment()
+
+config = configparser.ConfigParser()
+config.read("platformio.ini")
+
+try:
+    gcc_version = config.get("env:" + env.get("PIOENV"), "custom_gcc_version")
+except:
+    gcc_version = ''
 
 # Remove generic C/C++ tools
 for k in ("CC", "CXX"):
@@ -35,6 +48,11 @@ env.Tool("g++")
 
 # Restore C/C++ build flags as they were overridden by env.Tool
 env.Append(CFLAGS=backup_cflags, CXXFLAGS=backup_cxxflags)
+
+if gcc_version.isnumeric():
+    env.Replace(CC="gcc-" + gcc_version)
+    env.Replace(CXX="g++-" + gcc_version)
+    print("Using gcc-" + gcc_version + " as compiler.")
 
 #
 # Target: Build executable program
